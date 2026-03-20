@@ -1,0 +1,25 @@
+services:
+  sftpgo:
+    image: drakkan/sftpgo:latest
+    container_name: sftpgo
+    ports:
+      - "8080:8080"  # Web Admin UI
+      - "2022:2022"  # SFTP Service
+    environment:
+      # Initial Admin Setup
+      - SFTPGO_DEFAULT_ADMIN_USERNAME=admin
+      - SFTPGO_DEFAULT_ADMIN_PASSWORD=password123 
+      # Enable the Event Manager for your pipeline later
+      - SFTPGO_EVENT_MANAGER__ENABLED=1
+    volumes:
+      # Persistent configuration and database (SQLite by default)
+      - ./sftpgo_data:/var/lib/sftpgo
+      # The actual landing zone for your faxes
+      - ./srv/sftpgo:/srv/sftpgo
+    restart: always
+
+  # Optional: Your future Python OCR service placeholder
+  # ocr-processor:
+  #   build: ./ocr-service
+  #   volumes:
+  #     - ./srv/sftpgo:/data
