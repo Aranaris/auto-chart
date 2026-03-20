@@ -1,2 +1,25 @@
-/srv
-/sftpgo_data
+
+# Python Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Environment Variables (The most important part!)
+.env
+.env.local
+.env.*
+
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# SFTP Processing Folders (Don't sync your raw faxes to Git!)
+srv/sftpgo/data/
+srv/sftpgo/processing/
+
+sftpgo_data/
