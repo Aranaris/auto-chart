@@ -24,6 +24,12 @@ converter = DocumentConverter()
 
 def process_document(file_path: str, file_name: str):
     print(f"📄 Starting Docling conversion: {file_name}")
+    file_root, ext = os.path.splitext(file_name)
+
+    if ext not in [".tiff", ".tiff", ".pdf"]:
+        print(f"Skipping unsupported filetype: .{ext}")
+        return
+    
     try:
         # Convert TIFF to Docling's internal structured representation
         result = converter.convert(file_path)
@@ -32,10 +38,10 @@ def process_document(file_path: str, file_name: str):
         content_md = result.document.export_to_markdown()
 
         # Save the result to your 'processing' folder
-        file_root, _ = os.path.splitext(file_name)
+        
         outbound_file_name = f"{file_root}.md"
         output_path = os.path.join(OUTBOUND_DIR, outbound_file_name)
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(content_md)
 
         print(f"✅ Conversion complete: {output_path}")
