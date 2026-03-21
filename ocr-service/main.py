@@ -4,6 +4,7 @@ from docling.document_converter import DocumentConverter
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, OcrMacOptions
 from dotenv import load_dotenv
+import datetime
 
 # Load variables from .env into the system environment
 load_dotenv()
@@ -38,8 +39,9 @@ def process_document(file_path: str, file_name: str):
         content_md = result.document.export_to_markdown()
 
         # Save the result to your 'processing' folder
-        
-        outbound_file_name = f"{file_root}.md"
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+        output_file_name = f"{file_root}_{timestamp}.md"
+
         output_path = os.path.join(OUTBOUND_DIR, outbound_file_name)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content_md)
