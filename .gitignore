@@ -23,3 +23,7 @@ srv/sftpgo/data/
 srv/sftpgo/processing/
 
 sftpgo_data/
+
+#
+.vscode/
+.editorconfig
