@@ -48,6 +48,18 @@ def process_document(file_path: str, file_name: str):
 
         print(f"✅ Conversion complete: {output_path}")
         # NEXT STEP: Trigger the FHIR Mapper
+
+        extracted_data = {
+            "name": "John Doe",
+            "dob": "05/15/1985",
+            "gender": "Male",
+            "ssn": "000-00-0000"
+            }
+
+        fhir_json = create_fhir_patient(extracted_data)
+        with open(f"{OUTBOUND_DIR}/patient_fhir.json", "w") as f:
+        f.write(fhir_json)
+
     except Exception as e:
         print(f"❌ Docling failed on {file_name}: {e}")
 
