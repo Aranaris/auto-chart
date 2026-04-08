@@ -23,6 +23,7 @@ srv/sftpgo/data/
 srv/sftpgo/processing/
 
 sftpgo_data/
+samples/pdf-deid-dataset/
 
 #
 .vscode/

@@ -1,10 +1,14 @@
 import os
+import shutil
+import datetime
+
 from fastapi import FastAPI, Request, BackgroundTasks
 from docling.document_converter import DocumentConverter
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, OcrMacOptions
 from dotenv import load_dotenv
-import datetime
+from fhir_mapper import create_fhir_patient
+
 
 # Load variables from .env into the system environment
 load_dotenv()
@@ -12,6 +16,7 @@ load_dotenv()
 # Use the variables with fallbacks (defaults)
 INBOUND_DIR = os.getenv("INBOUND_DIR", "./data/inbound")
 OUTBOUND_DIR = os.getenv("OUTBOUND_DIR", "./data/processing")
+ARCHIVE_DIR = os.path.join(os.path.dirname(INBOUND_DIR), "archive")
 APP_PORT = int(os.getenv("APP_PORT", 8000))
 
 app = FastAPI()
@@ -42,7 +47,7 @@ def process_document(file_path: str, file_name: str):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
         output_file_name = f"{file_root}_{timestamp}.md"
 
-        output_path = os.path.join(OUTBOUND_DIR, outbound_file_name)
+        output_path = os.path.join(OUTBOUND_DIR, output_file_name)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content_md)
 
@@ -58,8 +63,17 @@ def process_document(file_path: str, file_name: str):
 
         fhir_json = create_fhir_patient(extracted_data)
         with open(f"{OUTBOUND_DIR}/patient_fhir.json", "w") as f:
-        f.write(fhir_json)
+            f.write(fhir_json)
 
+        # 2. Archive the file with a timestamp
+        archived_filename = f"{file_root}_{timestamp}{ext}"
+        
+        os.makedirs(ARCHIVE_DIR, exist_ok=True)
+        archive_path = os.path.join(ARCHIVE_DIR, archived_filename)
+        
+        shutil.move(file_path, archive_path)
+        print(f"✅ Success! Moved to archive: {archived_filename}")
+        
     except Exception as e:
         print(f"❌ Docling failed on {file_name}: {e}")
 
