@@ -52,20 +52,26 @@ def process_document(file_path: str, file_name: str):
             f.write(content_md)
 
         print(f"✅ Conversion complete: {output_path}")
-        # NEXT STEP: Trigger the FHIR Mapper
+        # 2. Trigger the FHIR Mapper
+
+        # In a production environment, you would typically send 'content_md'
+        # to an LLM (e.g., OpenAI, Claude) to extract these fields accurately.
 
         extracted_data = {
-            "name": "John Doe",
-            "dob": "05/15/1985",
-            "gender": "Male",
-            "ssn": "000-00-0000"
-            }
+            "name": extract_field(r"Name:\s*(.*)", content_md),
+            "dob": extract_field(r"DOB:\s*([\d/]+)", content_md),
+            "gender": extract_field(r"Gender:\s*(\w+)", content_md),
+            "ssn": extract_field(r"SSN:\s*([\d-]+)", content_md, default="000-00-0000")
+        }
 
         fhir_json = create_fhir_patient(extracted_data)
-        with open(f"{OUTBOUND_DIR}/patient_fhir.json", "w") as f:
+        fhir_output_path = f"{OUTBOUND_DIR}/patient_fhir.json"
+        with open(fhir_output_path, "w") as f:
             f.write(fhir_json)
 
-        # 2. Archive the file with a timestamp
+        print(f"✅ FHIR Mapping Complete: {fhir_output_path}")
+
+        # 3. Archive the file with a timestamp
         archived_filename = f"{file_root}_{timestamp}{ext}"
         
         os.makedirs(ARCHIVE_DIR, exist_ok=True)
@@ -95,6 +101,12 @@ async def handle_event(request: Request, background_tasks: BackgroundTasks):
     except Exception as e:
         print(f"❌ Webhook Handler Failed: {str(e)}")
         return {"status": "error", "message": str(e)}
+    
+import re
+
+def extract_field(pattern, text, default="Unknown"):
+    match = re.search(pattern, text, re.IGNORECASE)
+    return match.group(1).strip() if match else default
 
 if __name__ == "__main__":
     import uvicorn
