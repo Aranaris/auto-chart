@@ -1,39 +1,43 @@
-from fhir.resources.patient import Patient
-from fhir.resources.identifier import Identifier
-from fhir.resources.humanname import HumanName
-import datetime
+from pydantic_ai import Agent
+from pydantic import BaseModel, Field
+from typing import Optional, List
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
-def create_fhir_patient(raw_data: dict):
-    patient = Patient()
-    
-    # 1. Map Name (Splitting "John Doe" into Given/Family)
-    name_parts = raw_data.get("name", "Unknown").split(" ")
-    hn = HumanName()
-    hn.family = name_parts[-1]
-    hn.given = name_parts[:-1]
-    patient.name = [hn]
+# 1. Define the Agent
+# We use 'Patient' directly as the result_type
+class SimplifiedPatient(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    date_of_birth: Optional[str] = None  # String instead of 'date' to avoid format errors
+    gender: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    redacted_fields: List[str] = Field(default_factory=list) # To track what's missing
 
-    # 2. Map DOB (Ensuring FHIR format YYYY-MM-DD)
-    # If your OCR gives '01/20/1980', we must convert it
+# Update your Agent
+medical_mapper = Agent(
+    'google-gla:gemini-2.5-flash',
+    output_type=SimplifiedPatient, # Swap to the simpler model
+    system_prompt=(
+        "Extract basic patient info from the OCR text. "
+        "If a field is redacted (e.g., [REDACTED]), add the field name to the 'redacted_fields' list."
+    )
+)
+
+async def extract_to_fhir(ocr_markdown: str):
+    # The agent uses the fhir.resources schema to 'force' the LLM into compliance
+    result = None
+
     try:
-        dob_raw = raw_data.get("dob", "")
-        # Basic conversion logic - adjust based on John Snow Labs format
-        dob_date = datetime.datetime.strptime(dob_raw, "%d/%m/%Y").date()
-        patient.birthDate = dob_date.isoformat()
-    except Exception:
-        print("⚠️ Warning: Could not format DOB correctly")
-
-    # 3. Map Gender (Must be lowercase per FHIR spec)
-    gender = raw_data.get("gender", "unknown").lower()
-    if gender in ["male", "female", "other", "unknown"]:
-        patient.gender = gender
-
-    # 4. Map SSN as an Identifier
-    ssn_val = raw_data.get("ssn")
-    if ssn_val:
-        ident = Identifier()
-        ident.system = "http://hl7.org/fhir/sid/us-ssn"
-        ident.value = ssn_val
-        patient.identifier = [ident]
-
-    return patient.json(indent=2)
+        result = await medical_mapper.run(ocr_markdown)
+        # result.data is now a full fhir.resources.patient.Patient object
+        return result.output.model_dump_json(indent=2)
+    except UnexpectedModelBehavior as e:
+        # This will show you exactly which FHIR field failed validation
+        print(f"❌ Mapping Failed for this PDF: {e}")
+        return {"error": "Validation failed", "details": str(e)}
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}")
+        return {"error": "System error", "message": str(e)}
+    
+    

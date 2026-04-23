@@ -1,17 +1,19 @@
 import os
 import shutil
 import datetime
+import fastapi
 
-from fastapi import FastAPI, Request, BackgroundTasks
 from docling.document_converter import DocumentConverter
-from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, OcrMacOptions
-from dotenv import load_dotenv
-from fhir_mapper import create_fhir_patient
-
+from dotenv import load_dotenv, find_dotenv
 
 # Load variables from .env into the system environment
-load_dotenv()
+load_dotenv(find_dotenv())
+
+if not os.getenv("GOOGLE_API_KEY"):
+    print("⚠️ Warning: GOOGLE_API_KEY not found in environment!")
+
+from fhir_mapper import extract_to_fhir
 
 # Use the variables with fallbacks (defaults)
 INBOUND_DIR = os.getenv("INBOUND_DIR", "./data/inbound")
@@ -19,7 +21,7 @@ OUTBOUND_DIR = os.getenv("OUTBOUND_DIR", "./data/processing")
 ARCHIVE_DIR = os.path.join(os.path.dirname(INBOUND_DIR), "archive")
 APP_PORT = int(os.getenv("APP_PORT", 8000))
 
-app = FastAPI()
+app = fastapi.FastAPI()
 
 # Use Apple's native Vision framework instead of Tesseract
 pipeline_options = PdfPipelineOptions()
@@ -28,7 +30,7 @@ pipeline_options.ocr_options = OcrMacOptions()  # This is the "M1 Turbo" button
 
 converter = DocumentConverter()
 
-def process_document(file_path: str, file_name: str):
+async def process_document(file_path: str, file_name: str):
     print(f"📄 Starting Docling conversion: {file_name}")
     file_root, ext = os.path.splitext(file_name)
 
@@ -54,20 +56,10 @@ def process_document(file_path: str, file_name: str):
         print(f"✅ Conversion complete: {output_path}")
         # 2. Trigger the FHIR Mapper
 
-        # In a production environment, you would typically send 'content_md'
-        # to an LLM (e.g., OpenAI, Claude) to extract these fields accurately.
-
-        extracted_data = {
-            "name": extract_field(r"Name:\s*(.*)", content_md),
-            "dob": extract_field(r"DOB:\s*([\d/]+)", content_md),
-            "gender": extract_field(r"Gender:\s*(\w+)", content_md),
-            "ssn": extract_field(r"SSN:\s*([\d-]+)", content_md, default="000-00-0000")
-        }
-
-        fhir_json = create_fhir_patient(extracted_data)
+        fhir_patient_json = await extract_to_fhir(content_md)
         fhir_output_path = f"{OUTBOUND_DIR}/patient_fhir.json"
         with open(fhir_output_path, "w") as f:
-            f.write(fhir_json)
+            f.write(fhir_patient_json)
 
         print(f"✅ FHIR Mapping Complete: {fhir_output_path}")
 
@@ -84,7 +76,7 @@ def process_document(file_path: str, file_name: str):
         print(f"❌ Docling failed on {file_name}: {e}")
 
 @app.post("/process-fax")
-async def handle_event(request: Request, background_tasks: BackgroundTasks):
+async def handle_event(request: fastapi.Request, background_tasks: fastapi.BackgroundTasks):
     try:
         data = await request.json()
         print(f"📥 Received Webhook Data: {data}")  # Debug: See what SFTPGo is sending

@@ -1,16 +1,17 @@
 # Web Server
-fastapi==0.110.0
-uvicorn==0.27.1
+fastapi>=0.136.0
+uvicorn>=0.30.0
 
 # OCR and Document Processing
-docling==2.15.0
+docling>=2.90.0
 
 # Environment and Utilities
-python-dotenv==1.0.1
-python-multipart==0.0.9
+python-dotenv>=1.0.1
+python-multipart>=0.0.12
 
-# (Optional) Mac-specific OCR acceleration
-# ocrmac==0.1.0
+# Mapping Agent (Pydantic)
+pydantic>=2.12.0
+pydantic-ai[google]>=1.67.0
 
 # FHIR
-fhir.resources==7.1.0
+fhir.resources>=7.1.0
