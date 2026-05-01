@@ -6,8 +6,8 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 # 1. Define the Agent
 # We use 'Patient' directly as the result_type
 class SimplifiedPatient(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    identifier: Optional[str] = None
+    name: Optional[str] = None
     date_of_birth: Optional[str] = None  # String instead of 'date' to avoid format errors
     gender: Optional[str] = None
     phone: Optional[str] = None

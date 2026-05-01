@@ -20,6 +20,7 @@ INBOUND_DIR = os.getenv("INBOUND_DIR", "./data/inbound")
 OUTBOUND_DIR = os.getenv("OUTBOUND_DIR", "./data/processing")
 ARCHIVE_DIR = os.path.join(os.path.dirname(INBOUND_DIR), "archive")
 APP_PORT = int(os.getenv("APP_PORT", 8000))
+APP_HOST = str(os.getenv("APP_HOST", "0.0.0.0"))
 
 app = fastapi.FastAPI()
 
@@ -102,4 +103,4 @@ def extract_field(pattern, text, default="Unknown"):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=APP_HOST, port=APP_PORT)
