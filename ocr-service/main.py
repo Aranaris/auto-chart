@@ -94,12 +94,6 @@ async def handle_event(request: fastapi.Request, background_tasks: fastapi.Backg
     except Exception as e:
         print(f"❌ Webhook Handler Failed: {str(e)}")
         return {"status": "error", "message": str(e)}
-    
-import re
-
-def extract_field(pattern, text, default="Unknown"):
-    match = re.search(pattern, text, re.IGNORECASE)
-    return match.group(1).strip() if match else default
 
 if __name__ == "__main__":
     import uvicorn
